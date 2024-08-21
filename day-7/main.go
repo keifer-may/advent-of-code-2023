@@ -70,6 +70,14 @@ func createHand(line string) (hand Hand) {
 	return hand
 }
 
+func createListHands(lines []string) (hands []Hand) {
+	for _, line := range lines {
+		hand := createHand(line)
+		hands = append(hands, hand)
+	}
+	return hands
+}
+
 func rankHand(hand Hand) (newHand Hand){
 	newHand = hand
 	cards := make([]uint8, len(hand.cards))
@@ -136,53 +144,129 @@ func rankHand(hand Hand) (newHand Hand){
 
 }
 
-func revalueHandRankValue(hands []Hand) (updatedHands []Hand){
-	/* Okay, let's think this shit through:
-	So, we can easily get our hands and get what sort of hand we have.
-	It is fairly trivial to be able to create an array of hands. 
-	So we need to get the list off all unique hand types first.*/
-	updatedHands = hands
+//func revalueHandRankValue(hands []Hand) (updatedHands []Hand){
+//	/* Okay, let's think this shit through:
+//	So, we can easily get our hands and get what sort of hand we have.
+//	It is fairly trivial to be able to create an array of hands. 
+//	So we need to get the list off all unique hand types first.*/
+//	updatedHands = hands
+//
+//	uniqueHandRanks := []uint8{}
+//	for _, hand := range hands {
+//		if slices.Contains(uniqueHandRanks, hand.handRankValue) {
+//			continue
+//		} else {
+//			uniqueHandRanks = append(uniqueHandRanks, hand.handRankValue)
+//		}
+//	}
+//	fmt.Println(uniqueHandRanks)
+//	
+//	slices.Sort(uniqueHandRanks)
+//
+//	fmt.Println(updatedHands)
+//	if len(uniqueHandRanks) == 7 {
+//		return updatedHands
+//	} else {
+//		for i := 1; i <= len(uniqueHandRanks); i++ {
+//			ind := i - 1
+//			for handInd, hand := range updatedHands {
+//				if hand.handRankValue == uniqueHandRanks[ind] {
+//					fmt.Println(hand)
+//					newHand := hand
+//					newHand.handRankValue = uint8(i)
+//					updatedHands[handInd] = newHand
+//				}
+//				
+//			}
+//		}
+//	}
+//	fmt.Println(updatedHands)
+//	return updatedHands
+//}
 
+func groupHandRanks(handList []Hand) (listsHands [][]Hand) {
 	uniqueHandRanks := []uint8{}
-	for _, hand := range hands {
-		if slices.Contains(uniqueHandRanks, hand.handRankValue) {
+	for _, hand := range handList {
+		rankInt := hand.handRankValue
+		if slices.Contains(uniqueHandRanks, rankInt) {
 			continue
 		} else {
-			uniqueHandRanks = append(uniqueHandRanks, hand.handRankValue)
+			uniqueHandRanks = append(uniqueHandRanks, rankInt)
 		}
 	}
-	fmt.Println(uniqueHandRanks)
-	
+
 	slices.Sort(uniqueHandRanks)
 
-	fmt.Println(updatedHands)
-	if len(uniqueHandRanks) == 7 {
-		return updatedHands
-	} else {
-		for i := 1; i <= len(uniqueHandRanks); i++ {
-			ind := i - 1
-			for handInd, hand := range updatedHands {
-				if hand.handRankValue == uniqueHandRanks[ind] {
-					fmt.Println(hand)
-					newHand := hand
-					newHand.handRankValue = uint8(i)
-					updatedHands[handInd] = newHand
-				}
+	for _, handRank := range uniqueHandRanks {
+		listHands := []Hand{}
+		for _, hand := range handList {
+			handRankInt := hand.handRankValue
+			if handRank == handRankInt {
+				listHands = append(listHands, hand)
+			} else {
+				continue
+			}
+		}
+		listsHands = append(listsHands, listHands)
+	}
+	return listsHands
+}
+
+func orderHandGroups(groupedHands [][]Hand) (listHands []Hand) {
+	originalHandList := []Hand{}
+	for _, group := range groupedHands {
+		firstHand := group[0]
+		firstCards := firstHand.cards
+		for ind, hand := range group {
+			if ind == 0 && len(group) == 1 {
+				originalHandList = append(originalHandList, hand)
+				break
+			} else if ind == 0 {
+				continue
+			} else{
 				
+				compareCards := hand.cards
+				for cardInd, card := range compareCards {
+					if card >= firstCards[cardInd] && cardInd < 4 {
+						continue
+					} else if card < firstCards[cardInd] {
+						originalHandList = append(originalHandList, hand)
+						if ind + 2 <= len(group) {
+							firstHand = hand
+						} else {
+							originalHandList = append(originalHandList, firstHand)
+						}
+						break
+					} else {
+						originalHandList = append(originalHandList, firstHand)
+					}
+				}
+				if ind + 2 <= len(group) {
+					firstHand = hand
+				} else {
+					originalHandList = append(originalHandList, hand)
+				}
 			}
 		}
 	}
-	fmt.Println(updatedHands)
-	return updatedHands
+
+
+	for ind := 1; ind <= len(originalHandList); ind++ {
+		hand := originalHandList[ind-1]
+		hand.handRankValue = uint8(ind)
+		listHands = append(listHands, hand)
+	}
+	return listHands
 }
 
 func solutionOne() {
 	lines, _ := readFileToListStrings("example.txt")
 	fmt.Println(lines)
 
-	hand := createHand("AKKKK 333")
-	hand2 := createHand("AA254 234")
-	hands := []Hand{hand, hand2}
+	// hand := createHand("AKKKK 333")
+	// hand2 := createHand("AA254 234")
+	hands := createListHands(lines)
+	// fmt.Println(hands)
 
 	for ind, hand := range hands {
 		newHand := rankHand(hand)
@@ -190,10 +274,11 @@ func solutionOne() {
 		// fmt.Println(hand, newHand)
 	}
 	fmt.Println(hands)
-	newHands := revalueHandRankValue(hands)
-	// fmt.Println(hand)
-	// rankHand(&hand)
-	fmt.Println(newHands)
+	fmt.Println(hands)
+	groupedHands := groupHandRanks(hands)
+	fmt.Println(groupedHands)
+	sortedHands := orderHandGroups(groupedHands)
+	fmt.Println(sortedHands)
 }
 
 func main() {
