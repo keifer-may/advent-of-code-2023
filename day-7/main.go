@@ -172,23 +172,29 @@ func groupHandRanks(handList []Hand) (listsHands [][]Hand) {
 	return listsHands
 }
 
-func sortHandGroup(hands []Hand) {
+func sortHandGroup(hands []Hand) (newHands []Hand) {
 	for i, hand := range hands {
 		if i == len(hands) - 1 {
-			continue
+			break
 		} else {
-			nextHand := hands[i + 1]
-
-			for j, card := range hand.cards {
-				if nextHand.cards[j] < card {
-					tempHand := hand
-					hands[i] = nextHand
-					hands[i + 1] = tempHand
-					break
+			for j, nextHand := range hands{ 
+				if i == j {
+					continue
+				} else {
+					for k, card := range hand.cards {
+						if nextHand.cards[k] < card {
+							tempHand := hand
+							hands[i] = nextHand
+							hands[j] = tempHand
+							break
+						}
+					}
 				}
 			}
 		}
 	}
+	newHands = hands
+	return newHands
 }
 
 func processGroups(groupedHands [][]Hand) (listHands []Hand) {
@@ -212,8 +218,8 @@ func processGroups(groupedHands [][]Hand) (listHands []Hand) {
 	firstListHands := []Hand{}
 	
 	for _, group := range groupedHands {
-		sortHandGroup(group)
-		for _, hand := range group {
+		newGroup := sortHandGroup(group)
+		for _, hand := range newGroup {
 			firstListHands = append(firstListHands, hand)
 		}
 	}
@@ -240,7 +246,7 @@ func solutionOne() {
 	// hand := createHand("AKKKK 333")
 	// hand2 := createHand("AA254 234")
 	hands := createListHands(lines)
-	// fmt.Println(hands)
+	fmt.Println(hands)
 
 	for ind, hand := range hands {
 		newHand := rankHand(hand)
@@ -250,7 +256,7 @@ func solutionOne() {
 	// fmt.Println(hands)
 	groupedHands := groupHandRanks(hands)
 	finalHandList := processGroups(groupedHands)
-	// fmt.Println(finalHandList)
+	fmt.Println(finalHandList)
 	solution := getTotalSolutionOne(finalHandList)
 	fmt.Println("Final answer for problem one:", solution)
 	// fmt.Println(groupedHands)
