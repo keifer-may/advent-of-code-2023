@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -15,6 +16,22 @@ type Hand struct {
 	handRank string
 	handRankValue uint16
 }
+
+type HandGroup []Hand
+
+func (h HandGroup) Len() int {
+	return len(h)
+}
+func (h HandGroup) Less(i, j int) bool {
+	num := slices.Compare(h[i].cards, h[j].cards)
+	if num >= 0 {
+		return false
+	} else {
+		return true
+	}
+}
+
+func (h HandGroup) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 
 var rankMap = map[string]uint16{
 	"High card":1,
@@ -144,7 +161,7 @@ func rankHand(hand Hand) (newHand Hand){
 
 }
 
-func groupHandRanks(handList []Hand) (listsHands [][]Hand) {
+func groupHandRanks(handList []Hand) (listsHands []HandGroup) {
 	uniqueHandRanks := []uint16{}
 	for _, hand := range handList {
 		rankInt := hand.handRankValue
@@ -167,37 +184,16 @@ func groupHandRanks(handList []Hand) (listsHands [][]Hand) {
 				continue
 			}
 		}
-		listsHands = append(listsHands, listHands)
+		listsHands = append(listsHands, HandGroup(listHands))
 	}
 	return listsHands
 }
 
-func sortHandGroup(hands []Hand) (newHands []Hand) {
-	for i, hand := range hands {
-		if i == len(hands) - 1 {
-			break
-		} else {
-			for j, nextHand := range hands{ 
-				if i == j {
-					continue
-				} else {
-					for k, card := range hand.cards {
-						if nextHand.cards[k] < card {
-							tempHand := hand
-							hands[i] = nextHand
-							hands[j] = tempHand
-							break
-						}
-					}
-				}
-			}
-		}
-	}
-	newHands = hands
-	return newHands
+func sortHandGroup(hands HandGroup) {
+	sort.Sort(hands)
 }
 
-func processGroups(groupedHands [][]Hand) (listHands []Hand) {
+func processGroups(groupedHands []HandGroup) (listHands []Hand) {
 
 	for i, group := range groupedHands {
 		if i == len(groupedHands) - 1 {
@@ -218,8 +214,8 @@ func processGroups(groupedHands [][]Hand) (listHands []Hand) {
 	firstListHands := []Hand{}
 	
 	for _, group := range groupedHands {
-		newGroup := sortHandGroup(group)
-		for _, hand := range newGroup {
+		sortHandGroup(group)
+		for _, hand := range group {
 			firstListHands = append(firstListHands, hand)
 		}
 	}
@@ -240,7 +236,7 @@ func getTotalSolutionOne(listHands []Hand) (total int64) {
 }
 
 func solutionOne() {
-	lines, _ := readFileToListStrings("example.txt")
+	lines, _ := readFileToListStrings("input.txt")
 	// fmt.Println(lines)
 
 	// hand := createHand("AKKKK 333")
