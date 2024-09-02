@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"slices"
 	"sort"
@@ -10,13 +11,28 @@ import (
 	"strings"
 )
 
+var (
+	outfile, _ = os.Create("./log")
+	l = log.New(outfile, "", 0)
+)
+
+func deepCopy(src, dst *Hand) {
+	dst.bid = src.bid
+	dst.handRank = src.handRank
+	dst.handRankValue = src.handRankValue
+
+	dst.cards = make([]uint16, len(src.cards))
+	copy(dst.cards, src.cards)
+}
+
+
 type Hand struct {
 	cards    []uint16
 	bid      uint16
 	handRank string
 	handRankValue uint16
 }
-
+	
 type HandGroup []Hand
 
 func (h HandGroup) Len() int {
@@ -235,14 +251,163 @@ func getTotalSolutionOne(listHands []Hand) (total int64) {
 	return total
 }
 
+func replaceJacks(hand *Hand) {
+	cards := hand.cards 
+	for i, c := range cards {
+		if c == uint16(11) {
+			cards[i] = uint16(1)
+		}
+	}
+}
+
+func processJacks(hand *Hand) /*(newHand Hand)*/ {
+	checkCards := hand.cards
+	if slices.Contains(checkCards, uint16(11)) == false {
+	//	newHand = hand
+		return //newHand
+	} else {
+		replaceJacks(hand)
+		var copiedHand Hand
+
+		deepCopy(hand, &copiedHand)
+		l.Println(copiedHand, hand)
+
+		cards := copiedHand.cards
+
+		uniqueCards := make(map[uint16]int)
+		for _, card := range cards {
+			if uniqueCards[card] == 0 {
+				uniqueCards[card] = 1
+			} else {
+				count := uniqueCards[card]
+				uniqueCards[card] = count + 1
+			}
+		}
+
+		if len(uniqueCards) == 5 {
+			maxCard := slices.Max(cards)
+			locateJack := slices.Index(cards, uint16(1))
+			cards = slices.Replace(cards, locateJack, locateJack + 1, maxCard)
+			rankedHand := rankHand(copiedHand)
+			rankName := rankedHand.handRank
+			rankValue := rankedHand.handRankValue
+
+			l.Println(rankName, rankValue)
+
+			hand.handRank = rankName
+			hand.handRankValue = rankValue
+			l.Println(hand)
+			return
+
+		} else if len(uniqueCards) == 1 {
+			for i, _ := range cards {cards[i] = uint16(1)}
+			rankedHand := rankHand(copiedHand)
+			rankName := rankedHand.handRank
+			rankValue := rankedHand.handRankValue
+
+			hand.handRank = rankName
+			hand.handRankValue = rankValue
+			return
+
+		} else if len(uniqueCards) == 2 {
+			cardNotJack := uint16(0)
+			for _, card := range cards {
+				if card == uint16(1) {
+					continue
+				} else {
+					cardNotJack = card
+				}
+			}
+			for i, card := range cards {
+				if card == uint16(1) {
+					cards[i] = cardNotJack
+				} else {
+					continue
+				}
+			}
+			rankedHand := rankHand(copiedHand)
+			rankName := rankedHand.handRank
+			rankValue := rankedHand.handRankValue
+
+			hand.handRank = rankName
+			hand.handRankValue = rankValue
+			return
+
+		} else {
+
+			//fmt.Println(uniqueCards)
+			uniqueCounts := []int{}
+			for _, v := range uniqueCards {uniqueCounts = append(uniqueCounts, v)}
+			slices.Sort(uniqueCounts)
+			slices.Reverse(uniqueCounts)
+	//		fmt.Println(uniqueCounts)
+
+			maxCard := slices.Max(cards)
+			greatestInst := slices.Max(uniqueCounts)
+
+			if uniqueCards[uint16(1)] == greatestInst {
+				for card, count := range uniqueCards {
+					if card == uint16(1) {
+						continue
+					} else {
+						if count == greatestInst {
+							maxCard = card
+							for i, c := range cards {
+								if c == uint16(1) {
+									cards[i] = maxCard
+								} else {
+									continue
+								}
+							}
+						}
+					}
+				}
+
+				for i, c := range cards {
+					if c == uint16(1) {
+						cards[i] = maxCard
+					}
+				}
+			}
+
+			for card, count := range uniqueCards {
+				if count == greatestInst {
+					for i, c := range cards {
+						if c == uint16(1) {
+							cards[i] = card
+						} else {
+							continue
+						}
+					}
+				}
+
+			}
+			rankedHand := rankHand(copiedHand)
+			rankName := rankedHand.handRank
+			rankValue := rankedHand.handRankValue
+
+			hand.handRank = rankName
+			hand.handRankValue = rankValue
+			return
+		}
+		rankedHand := rankHand(copiedHand)
+		rankName := rankedHand.handRank
+		rankValue := rankedHand.handRankValue
+
+		hand.handRank = rankName
+		hand.handRankValue = rankValue
+		return
+	}
+}
+
 func solutionOne() {
 	lines, _ := readFileToListStrings("input.txt")
-	// fmt.Println(lines)
+//	fmt.Println(lines)
 
 	// hand := createHand("AKKKK 333")
 	// hand2 := createHand("AA254 234")
 	hands := createListHands(lines)
-	fmt.Println(hands)
+	//fmt.Println(hands)
 
 	for ind, hand := range hands {
 		newHand := rankHand(hand)
@@ -252,9 +417,34 @@ func solutionOne() {
 	// fmt.Println(hands)
 	groupedHands := groupHandRanks(hands)
 	finalHandList := processGroups(groupedHands)
-	fmt.Println(finalHandList)
+	//fmt.Println(finalHandList)
 	solution := getTotalSolutionOne(finalHandList)
 	fmt.Println("Final answer for problem one:", solution)
+	// fmt.Println(groupedHands)
+	// sortedHands := orderHandGroups(groupedHands)
+	// fmt.Println(sortedHands)
+}
+
+func solutionTwo() {
+	lines, _ := readFileToListStrings("input.txt")
+	hands := createListHands(lines)
+
+//	fmt.Println(hands)
+
+	for ind, hand := range hands {
+		l.Println(hand)
+		newHand := rankHand(hand)
+		processJacks(&newHand)
+		hands[ind] = newHand
+		l.Println(newHand)
+	}
+
+//	fmt.Println(hands)
+	groupedHands := groupHandRanks(hands)
+	finalHandList := processGroups(groupedHands)
+	//fmt.Println(finalHandList)
+	solution := getTotalSolutionOne(finalHandList)
+	fmt.Println("Final answer for problem two:", solution)
 	// fmt.Println(groupedHands)
 	// sortedHands := orderHandGroups(groupedHands)
 	// fmt.Println(sortedHands)
@@ -263,4 +453,5 @@ func solutionOne() {
 func main() {
 	// fmt.Println("Hello, World!")
 	solutionOne()
+	solutionTwo()
 }
