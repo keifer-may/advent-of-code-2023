@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -34,7 +35,7 @@ func processLines(lines []string) (path map[string][2]string, instructions strin
 
 //CREATE FUNCTION THAT WILL TAKE PATH, INSTRUCTIONS, START, AND END AND WILL RETURN THE NUMBER OF STEPS TO GET TO THE END
 
-func walkOne(path map[string][2]string, instructions string, start string, end string) (steps uint16) {
+func walkOne(path map[string][2]string, instructions string, start string, end string) (steps int) {
 	for !(start == end) {
 		for _, direct := range instructions {
 			if direct == 'L' {
@@ -51,6 +52,36 @@ func walkOne(path map[string][2]string, instructions string, start string, end s
 	return steps
 }
 
+func walkTwo(path map[string][2]string, instructions string, startNodes []string, endNodes []string) (stepsList []int) {
+	for _, node := range startNodes {
+		steps := 0
+		for !(slices.Contains(endNodes, node)) {
+			for _, direct := range instructions {
+				if direct == 'L' {
+					node = path[node][0]
+				} else {
+					node = path[node][1]
+				}
+				steps++
+				if slices.Contains(endNodes, node) {
+					stepsList = append(stepsList, steps)
+					break
+				}
+			}
+		}
+	}
+	return stepsList
+}
+
+func getListBySuffix(path map[string][2]string, suffix string) (listNodes []string) {
+	for node, _ := range path {
+		lastChar := node[2]
+		if string(lastChar) == suffix {
+			listNodes = append(listNodes, node)
+		}
+	}
+	return listNodes
+}
 
 func readFileToListStrings(path string) (lines []string, err error) {
 
@@ -69,6 +100,26 @@ func readFileToListStrings(path string) (lines []string, err error) {
 	return lines, nil
 }
 
+func greatestCommonDivisor(a, b int) int {
+	for b != 0 {
+		temp := b
+		b = a % b
+		a = temp
+	}
+	return a
+}
+
+func leastCommonMultiple(a, b int, integers ...int) int {
+	result := a * b / greatestCommonDivisor(a, b)
+	l.Println(result)
+
+	for i := 0; i < len(integers); i++ {
+		result = leastCommonMultiple(result, integers[i])
+	}
+
+	return result
+}
+
 func solutionOne() {
 	fmt.Println("Running problem 1")
 	lines, _ := readFileToListStrings("input.txt")
@@ -79,6 +130,27 @@ func solutionOne() {
 	fmt.Println("Solution 1:", answer)
 }
 
+func solutionTwo() {
+	fmt.Println("Running problem 2")
+	lines, _ := readFileToListStrings("input.txt")
+	l.Println(lines)
+	path, insts := processLines(lines)
+	l.Println(path, insts)
+	allAs := getListBySuffix(path, "A")
+	l.Println(allAs)
+	allZs := getListBySuffix(path, "Z")
+	l.Println(allZs)
+	stepList := walkTwo(path, insts, allAs, allZs)
+	//fmt.Println(stepList)
+	//params := make([]interface{}, 0)
+	//for _, int := range stepList{
+	//	params = append(params, int)
+	//}
+	answer := leastCommonMultiple(stepList[0], stepList[1], stepList[2:]...)
+	fmt.Println("Solution 2:", answer)
+}
+
 func main() {
 	solutionOne()
+	solutionTwo()
 }
