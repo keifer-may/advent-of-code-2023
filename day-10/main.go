@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	//"slices"
-	//"slices"
-	//"strconv"
-	//"strings"
 )
 
 var (
@@ -20,14 +16,6 @@ type location struct {
 	x   int
 	y   int
 	val rune
-}
-
-type connection struct {
-	current  location
-	last     *location
-	next     *location
-	value    []rune
-	possible [2]location
 }
 
 func readFileToListStrings(path string) (lines []string, err error) {
@@ -165,7 +153,7 @@ func createPaths(start location, possibleLocs []location) (paths [][]location) {
 
 //TODO: create functions to crawl path returning and int for the farthest point away
 
-func crawlPath(path []location, grid [][]rune) int {
+func crawlPath(path []location, grid [][]rune) (farthestPoint int, innerPoints float64) {
 	currSect := path[len(path)-1]
 
 	for !(currSect.val == 'S') {
@@ -224,13 +212,45 @@ func crawlPath(path []location, grid [][]rune) int {
 	}
 
 	if len(path)%2 == 0 {
-		return len(path) / 2
+		farthestPoint = len(path) / 2
 	} else {
-		return (len(path) - 1) / 2
+		farthestPoint = (len(path) - 1) / 2
+	}
+
+	area := shoestring(path)
+
+	innerPoints = picksAlgo(path, area)
+
+	return farthestPoint, innerPoints
+}
+
+func shoestring(corners []location) (area float64) {
+	subArea := 0
+	for i, corner := range corners[:len(corners)-1] {
+		nextCorner := corners[i+1]
+
+		subtotal := (corner.x * nextCorner.y) - (corner.y * nextCorner.x)
+		subArea += subtotal
+	}
+
+	area = float64(subArea) / float64(2)
+
+	if area < 0 {
+		return -(area)
+	} else {
+		return area
 	}
 }
 
-func solutionOne() {
+func picksAlgo(corners []location, area float64) (count float64) {
+	// A = count + (numcorners / 2) - 1
+	// A + 1 = count + (numcorners /2)
+	// A + 1 - (numcorners / 2) = count
+	count = area + float64(1) - float64(((len(corners) - 1) / 2))
+	return count
+}
+
+func solution() {
 	lines, _ := readFileToListStrings("./input.txt")
 	//fmt.Println(lines)
 	l.Println(lines)
@@ -246,12 +266,14 @@ func solutionOne() {
 	paths := createPaths(start, surroundingStart)
 
 	for _, path := range paths {
-		ans := crawlPath(path, grid)
-		fmt.Println("First answer calculated:", ans)
-		l.Println("First answer calculated:", ans)
+		ansOne, ansTwo := crawlPath(path, grid)
+		fmt.Println("First answer calculated:", ansOne)
+		l.Println("First answer calculated:", ansOne)
+		fmt.Println("Second answer calculated:", ansTwo)
+		l.Println("Second answer calculated:", ansTwo)
 	}
 }
 
 func main() {
-	solutionOne()
+	solution()
 }
