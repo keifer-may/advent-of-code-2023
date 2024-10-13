@@ -6,25 +6,27 @@ import (
 	"log"
 	"os"
 	"slices"
+	//"slices"
 	//"strconv"
 	//"strings"
 )
 
 var (
 	outfile, _ = os.Create("./log")
-	l = log.New(outfile, "", 0)
+	l          = log.New(outfile, "", 0)
 )
 
 type location struct {
-	x int
-	y int
+	x   int
+	y   int
+	val rune
 }
 
 type connection struct {
-	current location
-	last *location
-	next *location
-	value []rune
+	current  location
+	last     *location
+	next     *location
+	value    []rune
 	possible [2]location
 }
 
@@ -45,7 +47,7 @@ func readFileToListStrings(path string) (lines []string, err error) {
 	return lines, nil
 }
 
-func linesToGrid (lines []string) (grid [][]rune) {
+func linesToGrid(lines []string) (grid [][]rune) {
 	for _, line := range lines {
 		list := []rune{}
 		for _, char := range line {
@@ -56,59 +58,98 @@ func linesToGrid (lines []string) (grid [][]rune) {
 	return grid
 }
 
-func findStart(grid [][]rune) (location) {
+func findStart(grid [][]rune) location {
 	for y, row := range grid {
 		for x, char := range row {
 			if char == 'S' {
-				start := location{x: x, y: y}
+				start := location{x: x, y: y, val: 'S'}
 				return start
 			}
 		}
 	}
-	return location{x: 0, y: 0}
+	return location{x: 0, y: 0, val: ' '}
 }
 
-func surroundingStart(grid [][]rune, start location) ([]location) {
+func surroundingStart(grid [][]rune, start location) []location {
 	yRange := len(grid) - 1
 	xRange := len(grid[0]) - 1
 	possibleLocations := []location{}
+
 	if start.x != 0 {
-		possibleLocations = append(possibleLocations, location{x: (start.x - 1), y: start.y})
+		newX := start.x - 1
+		newY := start.y
+		value := grid[newY][newX]
+		if !(value == '.') {
+			possibleLocations = append(possibleLocations, location{x: newX, y: newY, val: value})
+		}
 	}
 	if start.y != 0 {
-		possibleLocations = append(possibleLocations, location{x: start.x, y: (start.y - 1)})
+		newX := start.x
+		newY := start.y - 1
+		value := grid[newY][newX]
+		if !(value == '.') {
+			possibleLocations = append(possibleLocations, location{x: newX, y: newY, val: value})
+		}
 	}
 	if start.x != xRange {
-		possibleLocations = append(possibleLocations, location{x: (start.x + 1), y: start.y})
+		newX := start.x + 1
+		newY := start.y
+		value := grid[newY][newX]
+		if !(value == '.') {
+			possibleLocations = append(possibleLocations, location{x: newX, y: newY, val: value})
+		}
 	}
 	if start.y != yRange {
-		possibleLocations = append(possibleLocations, location{x: start.x, y: (start.y + 1)})
-	}
-
-	delInd := []int{}
-	for i, loc := range possibleLocations {
-		val := grid[loc.y][loc.x]
-		if val == '.' {
-			delInd = append(delInd, i)
+		newX := start.x
+		newY := start.y + 1
+		value := grid[newY][newX]
+		if !(value == '.') {
+			possibleLocations = append(possibleLocations, location{x: newX, y: newY, val: value})
 		}
 	}
 
-	for i, delInd := range delInd {
-		
+	for i, loc := range possibleLocations {
+		keep := validSecConnect(start, loc)
+		if !keep {
+			fmt.Println(loc)
+			possibleLocations = slices.Delete(possibleLocations, i, i+1)
+		}
 	}
 
-	// otherwise we need to check what the value is in x +/- 1 or y +/- 1 and test if that is feasible at all......
+	//| is a vertical pipe connecting north and south.
+	//- is a horizontal pipe connecting east and west.
+	//L is a 90-degree bend connecting north and east.
+	//J is a 90-degree bend connecting north and west.
+	//7 is a 90-degree bend connecting south and west.
+	//F is a 90-degree bend connecting south and east.
+	//. is ground; there is no pipe in this tile.
+	//S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
 
-
-    //| is a vertical pipe connecting north and south.
-    //- is a horizontal pipe connecting east and west.
-    //L is a 90-degree bend connecting north and east.
-    //J is a 90-degree bend connecting north and west.
-    //7 is a 90-degree bend connecting south and west.
-    //F is a 90-degree bend connecting south and east.
-    //. is ground; there is no pipe in this tile.
-    //S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
 	return possibleLocations
+}
+
+func validSecConnect(first location, second location) bool {
+	deltaX := second.x - first.x
+	deltaY := second.y - first.y
+	currentVal := second.val
+
+	if (currentVal == '|') && (deltaY == 0) {
+		return false
+	} else if (currentVal == '-') && (deltaX == 0) {
+		return false
+	} else if (currentVal == 'L') && ((deltaX != -1) && (deltaY != 1)) {
+		return false
+	} else if (currentVal == 'J') && ((deltaX != 1) && (deltaY != 1)) {
+		return false
+	} else if (currentVal == '7') && ((deltaX != 1) && (deltaY != -1)) {
+		return false
+	} else if (currentVal == 'F') && ((deltaX != -1) && (deltaY != -1)) {
+		return false
+	} else if (deltaX == 0) && (deltaY == 0) {
+		return false
+	} else {
+		return true
+	}
 }
 
 func solutionOne() {
