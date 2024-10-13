@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"slices"
+	//"slices"
 	//"slices"
 	//"strconv"
 	//"strings"
@@ -79,7 +79,7 @@ func surroundingStart(grid [][]rune, start location) []location {
 		newX := start.x - 1
 		newY := start.y
 		value := grid[newY][newX]
-		if !(value == '.') {
+		if (value == '-') || (value == 'L') || (value == 'F') {
 			possibleLocations = append(possibleLocations, location{x: newX, y: newY, val: value})
 		}
 	}
@@ -87,7 +87,7 @@ func surroundingStart(grid [][]rune, start location) []location {
 		newX := start.x
 		newY := start.y - 1
 		value := grid[newY][newX]
-		if !(value == '.') {
+		if (value == '|') || (value == '7') || (value == 'F') {
 			possibleLocations = append(possibleLocations, location{x: newX, y: newY, val: value})
 		}
 	}
@@ -95,7 +95,7 @@ func surroundingStart(grid [][]rune, start location) []location {
 		newX := start.x + 1
 		newY := start.y
 		value := grid[newY][newX]
-		if !(value == '.') {
+		if (value == '-') || (value == '7') || (value == 'J') {
 			possibleLocations = append(possibleLocations, location{x: newX, y: newY, val: value})
 		}
 	}
@@ -103,18 +103,21 @@ func surroundingStart(grid [][]rune, start location) []location {
 		newX := start.x
 		newY := start.y + 1
 		value := grid[newY][newX]
-		if !(value == '.') {
+		if (value == '|') || (value == 'J') || (value == 'L') {
 			possibleLocations = append(possibleLocations, location{x: newX, y: newY, val: value})
 		}
 	}
 
-	for i, loc := range possibleLocations {
-		keep := validSecConnect(start, loc)
-		if !keep {
-			fmt.Println(loc)
-			possibleLocations = slices.Delete(possibleLocations, i, i+1)
-		}
-	}
+	//	slices.Reverse(possibleLocations)
+
+	//	for _, loc := range possibleLocations {
+	//		keep := validSecConnect(start, loc)
+	//		if !keep {
+	//			fmt.Println(loc)
+	//			ind := slices.Index(possibleLocations, loc)
+	//			possibleLocations = slices.Delete(possibleLocations, ind, ind+1)
+	//		}
+	//	}
 
 	//| is a vertical pipe connecting north and south.
 	//- is a horizontal pipe connecting east and west.
@@ -152,19 +155,101 @@ func validSecConnect(first location, second location) bool {
 	}
 }
 
+func createPaths(start location, possibleLocs []location) (paths [][]location) {
+	for _, loc := range possibleLocs {
+		path := []location{start, loc}
+		paths = append(paths, path)
+	}
+	return paths
+}
+
+//TODO: create functions to crawl path returning and int for the farthest point away
+
+func crawlPath(path []location, grid [][]rune) int {
+	currSect := path[len(path)-1]
+
+	for !(currSect.val == 'S') {
+		currSect = path[len(path)-1]
+		prevSect := path[len(path)-2]
+
+		prevDeltaX := currSect.x - prevSect.x
+		prevDeltaY := currSect.y - prevSect.y
+
+		currVal := currSect.val
+
+		switch currVal {
+		//-
+		case '-':
+			if prevDeltaX == 1 {
+				path = append(path, location{x: currSect.x + 1, y: currSect.y, val: grid[currSect.y][currSect.x+1]})
+			} else {
+				path = append(path, location{x: currSect.x - 1, y: currSect.y, val: grid[currSect.y][currSect.x-1]})
+			}
+		//|
+		case '|':
+			if prevDeltaY == 1 {
+				path = append(path, location{x: currSect.x, y: currSect.y + 1, val: grid[currSect.y+1][currSect.x]})
+			} else {
+				path = append(path, location{x: currSect.x, y: currSect.y - 1, val: grid[currSect.y-1][currSect.x]})
+			}
+		//L
+		case 'L':
+			if prevDeltaY == 1 {
+				path = append(path, location{x: currSect.x + 1, y: currSect.y, val: grid[currSect.y][currSect.x+1]})
+			} else {
+				path = append(path, location{x: currSect.x, y: currSect.y - 1, val: grid[currSect.y-1][currSect.x]})
+			}
+		//J
+		case 'J':
+			if prevDeltaY == 1 {
+				path = append(path, location{x: currSect.x - 1, y: currSect.y, val: grid[currSect.y][currSect.x-1]})
+			} else {
+				path = append(path, location{x: currSect.x, y: currSect.y - 1, val: grid[currSect.y-1][currSect.x]})
+			}
+		//F
+		case 'F':
+			if prevDeltaY == -1 {
+				path = append(path, location{x: currSect.x + 1, y: currSect.y, val: grid[currSect.y][currSect.x+1]})
+			} else {
+				path = append(path, location{x: currSect.x, y: currSect.y + 1, val: grid[currSect.y+1][currSect.x]})
+			}
+		//7
+		case '7':
+			if prevDeltaY == -1 {
+				path = append(path, location{x: currSect.x - 1, y: currSect.y, val: grid[currSect.y][currSect.x-1]})
+			} else {
+				path = append(path, location{x: currSect.x, y: currSect.y + 1, val: grid[currSect.y+1][currSect.x]})
+			}
+		}
+	}
+
+	if len(path)%2 == 0 {
+		return len(path) / 2
+	} else {
+		return (len(path) - 1) / 2
+	}
+}
+
 func solutionOne() {
-	lines, _ := readFileToListStrings("./example1.txt")
-	fmt.Println(lines)
+	lines, _ := readFileToListStrings("./input.txt")
+	//fmt.Println(lines)
 	l.Println(lines)
 	grid := linesToGrid(lines)
-	fmt.Println(grid)
+	//fmt.Println(grid)
 	l.Println(grid)
 	start := findStart(grid)
-	fmt.Println(start)
+	//fmt.Println(start)
 	l.Println(start)
 	surroundingStart := surroundingStart(grid, start)
 	l.Println(surroundingStart)
-	fmt.Println(surroundingStart)
+	//fmt.Println(surroundingStart)
+	paths := createPaths(start, surroundingStart)
+
+	for _, path := range paths {
+		ans := crawlPath(path, grid)
+		fmt.Println("First answer calculated:", ans)
+		l.Println("First answer calculated:", ans)
+	}
 }
 
 func main() {
