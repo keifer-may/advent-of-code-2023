@@ -5,6 +5,12 @@ import (
 	"os"
 )
 
+type Location struct {
+	x   int
+	y   int
+	val rune
+}
+
 func FileToStringArray(path string) (lines []string, err error) {
 
 	file, err := os.Open(path)
@@ -36,4 +42,16 @@ func FileToRuneGrid(path string) (grid [][]rune) {
 		grid = append(grid, list)
 	}
 	return grid
+}
+
+func LocItemsInGrid(grid [][]rune, value rune) (locations []Location) {
+	for y, row := range grid {
+		for x, char := range row {
+			if char == value {
+				loc := Location{x: x, y: y, val: value}
+				locations = append(locations, loc)
+			}
+		}
+	}
+	return locations
 }
