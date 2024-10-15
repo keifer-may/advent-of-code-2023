@@ -6,9 +6,9 @@ import (
 )
 
 type Location struct {
-	x   int
-	y   int
-	val rune
+	X   int
+	Y   int
+	Val rune
 }
 
 func FileToStringArray(path string) (lines []string, err error) {
@@ -48,7 +48,7 @@ func LocItemsInGrid(grid [][]rune, value rune) (locations []Location) {
 	for y, row := range grid {
 		for x, char := range row {
 			if char == value {
-				loc := Location{x: x, y: y, val: value}
+				loc := Location{X: x, Y: y, Val: value}
 				locations = append(locations, loc)
 			}
 		}

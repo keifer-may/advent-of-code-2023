@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"slices"
+
 	//"strconv"
 	//"strings"
 
@@ -28,7 +30,6 @@ func expandRow(grid [][]rune) [][]rune {
 	}
 
 	for i, ind := range indices {
-		fmt.Println(ind)
 		grid = slices.Insert(grid, ind+i, insRow)
 	}
 	return grid
@@ -48,7 +49,6 @@ func expandCol(grid [][]rune) [][]rune {
 	}
 
 	for i, ind := range indices {
-		fmt.Println(ind)
 		for j, row := range grid {
 			row = slices.Insert(row, ind+i, '.')
 			grid[j] = row
@@ -66,9 +66,30 @@ func emptySet(set []rune) bool {
 	}
 }
 
+func calculateDistance(galOne utils.Location, galTwo utils.Location) int {
+	xDistance := galTwo.x - galOne.x
+	yDistance := galTwo.y - galOne.y
+	totalDist := math.Abs(xDistance) + math.Abs(yDistance)
+	return int(totalDist)
+}
+
+func processAllPairs(galaxies []utils.Location) (allDist int) {
+	for i, galaxy := range galaxies {
+		if i == len(galaxies)-1 {
+			break
+		} else {
+			for _, nextGal := range galaxies[i+1:] {
+				distance := calculateDistance(galaxy, nextGal)
+				allDist += distance
+			}
+		}
+	}
+	return allDist
+}
+
 func solutionOne() {
 	grid := utils.FileToRuneGrid("./example1.txt")
-	fmt.Println(grid, len(grid))
+	l.Println(grid, len(grid))
 	l.Println(grid)
 	grid = expandRow(grid)
 	l.Println(grid, len(grid), len(grid[0]), len(grid[len(grid)-1]))
@@ -76,6 +97,9 @@ func solutionOne() {
 	l.Println(grid, len(grid), len(grid[0]), len(grid[len(grid)-1]))
 	locs := utils.LocItemsInGrid(grid, '#')
 	l.Println(locs)
+	finalAns := processAllPairs(locs)
+	l.Println(finalAns)
+	fmt.Println("Solution one:", finalAns)
 }
 
 func main() {
