@@ -2,15 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/keifer-may/advent-of-code-2023/utils"
 	"log"
 	"math"
 	"os"
 	"slices"
-
-	//"strconv"
-	//"strings"
-
-	"github.com/keifer-may/advent-of-code-2023/utils"
 )
 
 var (
@@ -67,8 +63,8 @@ func emptySet(set []rune) bool {
 }
 
 func calculateDistance(galOne utils.Location, galTwo utils.Location) int {
-	xDistance := galTwo.x - galOne.x
-	yDistance := galTwo.y - galOne.y
+	xDistance := float64(galTwo.X - galOne.X)
+	yDistance := float64(galTwo.Y - galOne.Y)
 	totalDist := math.Abs(xDistance) + math.Abs(yDistance)
 	return int(totalDist)
 }
@@ -87,8 +83,40 @@ func processAllPairs(galaxies []utils.Location) (allDist int) {
 	return allDist
 }
 
+func calcDistArray(galaxies []utils.Location) (distances []int) {
+	for i, galaxy := range galaxies {
+		if i == len(galaxies)-1 {
+			break
+		} else {
+			for _, nextGal := range galaxies[i+1:] {
+				distance := calculateDistance(galaxy, nextGal)
+				distances = append(distances, distance)
+			}
+		}
+	}
+	return distances
+}
+
+func deltaDistArrays(distArrOne []int, distArrTwo []int) (deltas []int) {
+	for i, dist := range distArrOne {
+		secDist := distArrTwo[i]
+		diff := math.Abs(float64(secDist - dist))
+		deltas = append(deltas, int(diff))
+	}
+	return deltas
+}
+
+func calcBasedOnDeltas(distArr []int, deltas []int, multiple int) int {
+	total := 0
+	for i, dist := range distArr {
+		sub := dist + (deltas[i] * multiple)
+		total += sub
+	}
+	return total
+}
+
 func solutionOne() {
-	grid := utils.FileToRuneGrid("./example1.txt")
+	grid := utils.FileToRuneGrid("./input.txt")
 	l.Println(grid, len(grid))
 	l.Println(grid)
 	grid = expandRow(grid)
@@ -102,6 +130,20 @@ func solutionOne() {
 	fmt.Println("Solution one:", finalAns)
 }
 
+func solutionTwo() {
+	grid := utils.FileToRuneGrid("./input.txt")
+	locs := utils.LocItemsInGrid(grid, '#')
+	initDists := calcDistArray(locs)
+	grid = expandRow(grid)
+	grid = expandCol(grid)
+	locsTwo := utils.LocItemsInGrid(grid, '#')
+	secDists := calcDistArray(locsTwo)
+	deltas := deltaDistArrays(initDists, secDists)
+	answer := calcBasedOnDeltas(initDists, deltas, 999999)
+	fmt.Println("Solution two:", answer)
+}
+
 func main() {
 	solutionOne()
+	solutionTwo()
 }
