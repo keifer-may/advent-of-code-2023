@@ -111,16 +111,27 @@ func createWindows(chars []rune, req []int, valid *int) int {
 			if len(req) == 1 {
 				*valid = *valid + 1
 				fmt.Println(string(window))
+				if len(chars[1:]) >= req[0] {
+					nextChars := chars[1:]
+					createWindows(nextChars, req, valid)
+				}
 				//return 0
-			} else if len(chars) > req[0]+1 {
+			} else if len(chars) > req[0]+1 && !(chars[req[0]] == '#') {
+				nextReq := req[1:]
+				if chars[req[0]] == '?' {
+					nextChars := chars[req[0]:]
+					createWindows(nextChars, req, valid)
+					//createWindows(nextChars, nextReq, valid)
+				}
 				nextChars := chars[req[0]+1:]
-				createWindows(nextChars, req[1:], valid)
 				if len(nextChars) >= req[1] {
-					nextChars = nextChars[1:]
-					nextReq := req[1:]
+					//nextChars = nextChars[1:]
 					fmt.Println(nextReq, string(nextChars))
 					createWindows(nextChars, nextReq, valid)
 				}
+			} else if len(chars) > req[0]+1 {
+				nextChars := chars[req[0]+1:]
+				createWindows(nextChars, req, valid)
 			}
 		} else if len(chars) > req[0]+1 {
 			nextChars := chars[1:]
@@ -141,7 +152,7 @@ func processWholeString(chars []rune, req []int, valid *int) {
 
 func solutionOne() {
 	lines, _ := utils.FileToStringArray("./example1.txt")
-	items, req := lineToItemsAndRequirements(lines[3])
+	items, req := lineToItemsAndRequirements(lines[5])
 	count := 0
 	createWindows(items, req, &count)
 	fmt.Println(count)
