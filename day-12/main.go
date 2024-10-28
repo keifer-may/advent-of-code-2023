@@ -29,74 +29,7 @@ func lineToItemsAndRequirements(line string) (items []rune, require []int) {
 	return items, require
 }
 
-//func checkTryAgainstRequirements(try string, require []int) bool {
-//	split := strings.Split(try, ".")
-//	final := []int{}
-//
-//	for _, str := range split {
-//		if strings.Contains(str, "#") {
-//			final = append(final, len(str))
-//		}
-//	}
-//
-//	return slices.Equal(final, require.Counts)
-//}
-
-//func createTries(items string, req Requirement) {
-//	//count := strings.Count(items, "?")
-//	//inds := []int{}
-//	//fmt.Println(items, req)
-//	//removed := strings.ReplaceAll(items, ".", "")
-//	//fmt.Println(removed)
-//	validCount := 0
-//	fmt.Println(items, req)
-
-//	chars := []rune(items)
-
-//	for i, _ := range chars {
-//		if i+req.Counts[0] > len(chars)-1 {
-//			//return
-//			fmt.Println("")
-//		} else {
-//			firstWind := chars[i : i+req.Counts[0]]
-//			nextWindStart := i + req.Counts[0] + 1
-//			fmt.Println("First window", string(firstWind), i, nextWindStart)
-//			if !(slices.Contains(firstWind, '.')) && !(len(req.Counts) == 1) {
-//				for j, winLen := range req.Counts[1:] {
-//					if (nextWindStart < len(chars)-1) && (nextWindStart+winLen < len(chars)-1) {
-//						subChars := chars[nextWindStart:]
-//						for k, _ := range subChars {
-//							nextWind := subChars[k : k+winLen]
-//							fmt.Println("Next window", string(nextWind), k)
-//							if !(j+1 == len(req.Counts)) && !(slices.Contains(nextWind, '.')) {
-//								nextWindStart = k + winLen + 1
-//								if (nextWindStart < len(subChars)-1) && (nextWindStart+req.Counts[j+1] < len(subChars)-1) {
-//									subChars = subChars[nextWindStart:]
-//								}
-//							} else if j+1 == len(req.Counts) {
-//								validCount++
-//							}
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-
-//	fmt.Println(validCount)
-//	for i := 0; i <= count; i++ {
-
-//		broke := strings.Replace(items, "?", "#", i)
-//		broke = strings.ReplaceAll(broke, "?", ".")
-//		fmt.Println(checkTryAgainstRequirements(broke, req), broke)
-//		working := strings.Replace(items, "?", ".", i)
-//		working = strings.ReplaceAll(working, "?", "#")
-//		fmt.Println(checkTryAgainstRequirements(working, req), working)
-//	}
-//}
-//
-
-func containsWorking(chars []rune) bool {
+func notWorking(chars []rune) bool {
 	if slices.Contains(chars, '.') {
 		return false
 	} else {
@@ -104,62 +37,56 @@ func containsWorking(chars []rune) bool {
 	}
 }
 
-func createWindows(chars []rune, req []int, valid *int) int {
-	if len(chars) >= req[0] {
+func checkWindows(chars []rune, req []int, valid *int) {
+	enoughChars := len(chars) >= req[0]
+	if enoughChars {
+
 		window := chars[:req[0]]
-		if containsWorking(window) {
-			if len(req) == 1 {
-				*valid = *valid + 1
-				fmt.Println(string(window))
-				if len(chars[1:]) >= req[0] {
-					nextChars := chars[1:]
-					createWindows(nextChars, req, valid)
-				}
-				//return 0
-			} else if len(chars) > req[0]+1 && !(chars[req[0]] == '#') {
-				nextReq := req[1:]
-				if chars[req[0]] == '?' {
-					nextChars := chars[req[0]:]
-					createWindows(nextChars, req, valid)
-					//createWindows(nextChars, nextReq, valid)
-				}
-				nextChars := chars[req[0]+1:]
-				if len(nextChars) >= req[1] {
-					//nextChars = nextChars[1:]
-					fmt.Println(nextReq, string(nextChars))
-					createWindows(nextChars, nextReq, valid)
-				}
-			} else if len(chars) > req[0]+1 {
-				nextChars := chars[req[0]+1:]
-				createWindows(nextChars, req, valid)
+		firstChar := chars[0]
+		oneReq := len(req) == 1
+		moreChars := len(chars) > req[0]
+
+		if notWorking(window) && oneReq {
+			*valid = *valid + 1
+			if moreChars {
+				checkWindows(chars[1:], req, valid)
 			}
-		} else if len(chars) > req[0]+1 {
-			nextChars := chars[1:]
-			if len(nextChars) >= req[0] {
-				createWindows(nextChars, req, valid)
+		} else if (firstChar == '#') && moreChars && (chars[req[0]] == '#') {
+			checkWindows(chars[2:], req, valid)
+		} else if notWorking(window) && !(oneReq) {
+			if moreChars {
+				if window[len(window)-1] == '#' {
+					checkWindows(chars[2:], req, valid)
+				} else {
+					checkWindows(chars[1:], req, valid)
+				}
+				if !(chars[req[0]] == '#') {
+					checkWindows(chars[req[0]+1:], req[1:], valid)
+				}
 			}
+		} else if !(notWorking(window)) && moreChars {
+			checkWindows(chars[1:], req, valid)
 		}
-	}
-	return 0
-}
-
-func processWholeString(chars []rune, req []int, valid *int) {
-	for i, _ := range chars {
-		createWindows(chars[i:], req, valid)
-
 	}
 }
 
 func solutionOne() {
-	lines, _ := utils.FileToStringArray("./example1.txt")
-	items, req := lineToItemsAndRequirements(lines[5])
-	count := 0
-	createWindows(items, req, &count)
-	fmt.Println(count)
-
+	lines, _ := utils.FileToStringArray("./input.txt")
+	//items, req := lineToItemsAndRequirements(lines[0])
+	//count := 0
+	//checkWindows(items, req, &count)
+	//fmt.Println(count, lines[0])
+	sum := 0
+	for _, line := range lines {
+		items, req := lineToItemsAndRequirements(line)
+		count := 0
+		checkWindows(items, req, &count)
+		l.Println(count, line)
+		sum += count
+	}
+	fmt.Println("Final answer one:", sum)
 }
 
 func main() {
-	fmt.Println("Hello")
 	solutionOne()
 }
